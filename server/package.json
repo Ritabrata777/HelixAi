@@ -1,0 +1,25 @@
+{
+  "name": "helix-ai-server",
+  "version": "1.0.0",
+  "description": "HelixAI Backend Server with ML Integration",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "ml:setup": "cd ml && pip install -r requirements.txt",
+    "ml:train": "cd ml && python train_model.py"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "html-pdf-node": "^1.0.8",
+    "mongoose": "^8.0.3",
+    "puppeteer": "^24.35.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

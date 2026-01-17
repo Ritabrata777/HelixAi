@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Generation Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <h1>PDF Generation Test</h1>
+    <button onclick="testPDF()">Generate Test PDF</button>
+    
+    <script>
+        function testPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add header
+            doc.setFillColor(100, 50, 255);
+            doc.rect(0, 0, 210, 30, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(20);
+            doc.text('HelixAI Medical Report', 20, 20);
+            
+            // Add content
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.text('Sample ID: TEST-001', 20, 50);
+            doc.text('Patient ID: PAT-001', 20, 60);
+            doc.text('Risk Score: 45%', 20, 70);
+            
+            // Add risk circle
+            doc.setFillColor(255, 152, 0);
+            doc.circle(105, 100, 25, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text('45%', 95, 105);
+            
+            // Save the PDF
+            doc.save('HelixAI_Test_Report.pdf');
+            alert('PDF generated successfully!');
+        }
+    </script>
+</body>
+</html>
