@@ -55,8 +55,54 @@ const TransactionSchema = new mongoose.Schema({
     blockNumber: Number
 });
 
+// User Schema - for patient registration
+const UserSchema = new mongoose.Schema({
+    walletAddress: { type: String, unique: true, sparse: true },
+    name: { type: String, required: true },
+    age: Number,
+    sex: { type: String, enum: ['Male', 'Female', 'Other'] },
+    dob: Date,
+    address: String,
+    phone: String,
+    email: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+// Lab Schema - available labs for testing
+const LabSchema = new mongoose.Schema({
+    labId: { type: String, unique: true },
+    name: { type: String, required: true },
+    address: String,
+    phone: String,
+    city: String,
+    isActive: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+// Test Request Schema - user requests to labs
+const TestRequestSchema = new mongoose.Schema({
+    requestId: { type: String, unique: true },
+    labId: String,
+    labName: String,
+    userId: String, // wallet address or generated ID
+    patientInfo: {
+        name: String,
+        age: Number,
+        sex: String,
+        dob: Date,
+        address: String,
+        phone: String
+    },
+    status: { type: String, enum: ['pending', 'accepted', 'rejected', 'completed'], default: 'pending' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: Date
+});
+
 const Sample = mongoose.model('Sample', SampleSchema);
 const Transaction = mongoose.model('Transaction', TransactionSchema);
+const User = mongoose.model('User', UserSchema);
+const Lab = mongoose.model('Lab', LabSchema);
+const TestRequest = mongoose.model('TestRequest', TestRequestSchema);
 
 // Routes
 const pdfRoutes = require('./routes/pdf');
@@ -150,6 +196,129 @@ app.post('/api/transactions', async (req, res) => {
     }
 });
 
+// ============= USER ROUTES =============
+
+// Register/Update user
+app.post('/api/users', async (req, res) => {
+    try {
+        const { walletAddress, ...userData } = req.body;
+        const user = await User.findOneAndUpdate(
+            { walletAddress },
+            { walletAddress, ...userData },
+            { upsert: true, new: true }
+        );
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get user by wallet address
+app.get('/api/users/:walletAddress', async (req, res) => {
+    try {
+        const user = await User.findOne({ walletAddress: req.params.walletAddress });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============= LAB ROUTES =============
+
+// Get all labs
+app.get('/api/labs', async (req, res) => {
+    try {
+        const labs = await Lab.find({ isActive: true });
+        res.json(labs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Seed labs (run once)
+app.post('/api/labs/seed', async (req, res) => {
+    try {
+        const sampleLabs = [
+            { labId: 'LAB-001', name: 'Apollo Diagnostics', address: 'Salt Lake, Sector V', city: 'Kolkata', phone: '033-4040-1234' },
+            { labId: 'LAB-002', name: 'Dr. Lal PathLabs', address: 'Andheri West', city: 'Mumbai', phone: '022-4040-5678' },
+            { labId: 'LAB-003', name: 'SRL Diagnostics', address: 'Connaught Place', city: 'Delhi', phone: '011-4040-9012' },
+            { labId: 'LAB-004', name: 'Thyrocare Technologies', address: 'Turbhe', city: 'Navi Mumbai', phone: '022-4040-3456' },
+            { labId: 'LAB-005', name: 'Metropolis Healthcare', address: 'Park Street', city: 'Kolkata', phone: '033-4040-7890' }
+        ];
+
+        for (const lab of sampleLabs) {
+            await Lab.findOneAndUpdate({ labId: lab.labId }, lab, { upsert: true });
+        }
+        res.json({ success: true, message: 'Labs seeded successfully', count: sampleLabs.length });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ============= TEST REQUEST ROUTES =============
+
+// Create test request
+app.post('/api/test-requests', async (req, res) => {
+    try {
+        const requestId = `REQ-${Date.now().toString(36).toUpperCase()}`;
+        const testRequest = new TestRequest({
+            requestId,
+            ...req.body,
+            createdAt: new Date()
+        });
+        await testRequest.save();
+        res.json(testRequest);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all pending test requests (for labs)
+app.get('/api/test-requests/pending', async (req, res) => {
+    try {
+        const requests = await TestRequest.find({ status: 'pending' }).sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all test requests
+app.get('/api/test-requests', async (req, res) => {
+    try {
+        const requests = await TestRequest.find().sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update test request (accept/reject)
+app.put('/api/test-requests/:requestId', async (req, res) => {
+    try {
+        const request = await TestRequest.findOneAndUpdate(
+            { requestId: req.params.requestId },
+            { ...req.body, updatedAt: new Date() },
+            { new: true }
+        );
+        if (!request) return res.status(404).json({ error: 'Request not found' });
+        res.json(request);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get pending count
+app.get('/api/test-requests/count', async (req, res) => {
+    try {
+        const count = await TestRequest.countDocuments({ status: 'pending' });
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
@@ -159,74 +328,74 @@ app.get('/api/health', (req, res) => {
 app.post('/api/ml/predict', async (req, res) => {
     try {
         const inputData = req.body;
-        
+
         // Validate required fields
         const requiredFields = ['age', 'sex', 'smokingStatus', 'cfDNATotal', 'fragmentScore', 'shortFragmentRatio', 'tp53Mut', 'krasMut', 'cea'];
         const missingFields = requiredFields.filter(field => !inputData.hasOwnProperty(field));
-        
+
         if (missingFields.length > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: `Missing required fields: ${missingFields.join(', ')}` 
+            return res.status(400).json({
+                success: false,
+                error: `Missing required fields: ${missingFields.join(', ')}`
             });
         }
-        
+
         // Determine Python command (prefer virtual environment)
         const mlDir = path.join(__dirname, 'ml');
-        const venvPython = process.platform === 'win32' 
+        const venvPython = process.platform === 'win32'
             ? path.join(mlDir, '.venv', 'Scripts', 'python.exe')
             : path.join(mlDir, '.venv', 'bin', 'python');
-        
+
         const pythonCmd = require('fs').existsSync(venvPython) ? venvPython : 'python';
-        
+
         // Use enhanced ML service (trained model with 97.8% ROC-AUC)
         const mlScript = path.join(mlDir, 'enhanced_ml_service.py');
-        
+
         // Call Python ML service
         const pythonProcess = spawn(pythonCmd, [
             mlScript,
             JSON.stringify(inputData)
         ]);
-        
+
         let result = '';
         let error = '';
-        
+
         pythonProcess.stdout.on('data', (data) => {
             result += data.toString();
         });
-        
+
         pythonProcess.stderr.on('data', (data) => {
             error += data.toString();
         });
-        
+
         pythonProcess.on('close', (code) => {
             if (code !== 0) {
                 console.error('Python process error:', error);
-                return res.status(500).json({ 
-                    success: false, 
+                return res.status(500).json({
+                    success: false,
                     error: 'ML prediction failed',
-                    details: error 
+                    details: error
                 });
             }
-            
+
             try {
                 const prediction = JSON.parse(result);
                 res.json(prediction);
             } catch (parseError) {
                 console.error('JSON parse error:', parseError);
-                res.status(500).json({ 
-                    success: false, 
-                    error: 'Failed to parse ML result' 
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to parse ML result'
                 });
             }
         });
-        
+
     } catch (err) {
         console.error('ML prediction error:', err);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             error: 'Internal server error',
-            details: err.message 
+            details: err.message
         });
     }
 });
@@ -236,50 +405,50 @@ app.post('/api/ml/initialize', async (req, res) => {
     try {
         // Determine Python command (prefer virtual environment)
         const mlDir = path.join(__dirname, 'ml');
-        const venvPython = process.platform === 'win32' 
+        const venvPython = process.platform === 'win32'
             ? path.join(mlDir, '.venv', 'Scripts', 'python.exe')
             : path.join(mlDir, '.venv', 'bin', 'python');
-        
+
         const pythonCmd = require('fs').existsSync(venvPython) ? venvPython : 'python';
-        
+
         const pythonProcess = spawn(pythonCmd, [
             path.join(mlDir, 'train_model.py')
         ]);
-        
+
         let result = '';
         let error = '';
-        
+
         pythonProcess.stdout.on('data', (data) => {
             result += data.toString();
         });
-        
+
         pythonProcess.stderr.on('data', (data) => {
             error += data.toString();
         });
-        
+
         pythonProcess.on('close', (code) => {
             if (code !== 0) {
                 console.error('Model training error:', error);
-                return res.status(500).json({ 
-                    success: false, 
+                return res.status(500).json({
+                    success: false,
                     error: 'Model training failed',
-                    details: error 
+                    details: error
                 });
             }
-            
-            res.json({ 
-                success: true, 
+
+            res.json({
+                success: true,
                 message: 'Model initialized successfully',
-                output: result 
+                output: result
             });
         });
-        
+
     } catch (err) {
         console.error('Model initialization error:', err);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             error: 'Failed to initialize model',
-            details: err.message 
+            details: err.message
         });
     }
 });

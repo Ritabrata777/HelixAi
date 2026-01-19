@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Dna, Home, Activity, FileText, QrCode, Brain, Clock, LogOut, Menu, X } from 'lucide-react';
+import { Dna, Home, Activity, FileText, QrCode, Brain, Clock, LogOut, Menu, X, Bot, Truck } from 'lucide-react';
 
 interface NavbarProps {
     portal: 'user' | 'lab';
@@ -14,11 +14,13 @@ const Navbar: React.FC<NavbarProps> = ({ portal }) => {
         { path: '/user/dashboard', label: 'Dashboard', icon: Home },
         { path: '/user/track', label: 'Track Sample', icon: Activity },
         { path: '/user/results', label: 'Results', icon: FileText },
+        { path: '/user/chat-with-pdf', label: 'AI Document Chat', icon: Bot },
     ];
 
     const labLinks = [
         { path: '/lab/dashboard', label: 'Dashboard', icon: Home },
         { path: '/lab/scan', label: 'Scan Sample', icon: QrCode },
+        { path: '/lab/transport', label: 'Transport', icon: Truck },
         { path: '/lab/analyze', label: 'AI Analysis', icon: Brain },
         { path: '/lab/history', label: 'History', icon: Clock },
     ];

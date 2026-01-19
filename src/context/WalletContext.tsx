@@ -108,11 +108,15 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
     // Disconnect wallet
     const disconnectWallet = useCallback(() => {
+        console.log('Disconnecting wallet...');
+        // Clear localStorage FIRST to prevent auto-reconnect
+        localStorage.removeItem('walletConnected');
+        // Then clear state
         setAccount(null);
         setChainId(null);
         setProvider(null);
         setSigner(null);
-        localStorage.removeItem('walletConnected');
+        console.log('Wallet disconnected successfully');
     }, []);
 
     // Switch to Polygon Amoy network
@@ -151,7 +155,12 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 
         const handleAccountsChanged = async (accounts: string[]) => {
             if (accounts.length === 0) {
-                disconnectWallet();
+                // User disconnected from MetaMask directly
+                localStorage.removeItem('walletConnected');
+                setAccount(null);
+                setChainId(null);
+                setProvider(null);
+                setSigner(null);
             } else {
                 setAccount(accounts[0]);
                 if (provider) {
@@ -174,16 +183,19 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
         ethereum.on('accountsChanged', handleAccountsChanged);
         ethereum.on('chainChanged', handleChainChanged);
 
-        // Auto-connect if previously connected
-        if (localStorage.getItem('walletConnected') === 'true') {
-            connectWallet();
-        }
-
         return () => {
             ethereum.removeListener('accountsChanged', handleAccountsChanged);
             ethereum.removeListener('chainChanged', handleChainChanged);
         };
-    }, [account, connectWallet, disconnectWallet, provider]);
+    }, [account, provider]);
+
+    // Auto-connect on initial mount only
+    useEffect(() => {
+        if (localStorage.getItem('walletConnected') === 'true') {
+            connectWallet();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty deps = only on mount
 
     const value: WalletContextType = {
         account,

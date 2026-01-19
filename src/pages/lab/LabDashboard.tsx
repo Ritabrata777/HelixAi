@@ -1,67 +1,129 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Clock, AlertTriangle } from 'lucide-react';
+import { Brain, Clock, AlertTriangle, Cpu, TestTube, BarChart3, QrCode, Truck, Bell } from 'lucide-react';
 import { useBlockchain } from '../../context/BlockchainContext';
 import Navbar from '../../components/Navbar';
-import '../pages.css';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const LabDashboard: React.FC = () => {
     const { samples, transactions } = useBlockchain();
     const labName = localStorage.getItem('labName') || 'Lab Admin';
+    const [pendingRequestCount, setPendingRequestCount] = useState(0);
+
+    useEffect(() => {
+        const fetchPendingCount = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/test-requests/count`);
+                setPendingRequestCount(res.data.count);
+            } catch (err) {
+                console.error('Error fetching pending count:', err);
+            }
+        };
+        fetchPendingCount();
+        const interval = setInterval(fetchPendingCount, 10000); // Refresh every 10s
+        return () => clearInterval(interval);
+    }, []);
 
     const highRiskCount = samples.filter(s => (s.riskScore || 0) >= 70).length;
-    const pendingCount = samples.filter(s => s.status !== 'completed').length;
-    const completedCount = samples.filter(s => s.status === 'completed').length;
+    const pendingCount = samples.filter(s => s.status !== 'completed' && s.status !== 'collected').length;
+    const awaitingTransportCount = samples.filter(s => s.status === 'collected').length;
 
     return (
         <div className="portal-page">
             <Navbar portal="lab" />
             <div className="portal-container">
 
-                <div className="welcome-card" style={{ background: 'linear-gradient(135deg, rgba(100,50,255,0.1), rgba(255,0,255,0.05))' }}>
-                    <h2 style={{ color: 'var(--accent-purple)' }}>⬢ LAB DASHBOARD</h2>
-                    <p>Welcome, {labName.toUpperCase()} - Manage patient diagnostics and run AI analysis</p>
+                <div className="welcome-card" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05))' }}>
+                    <h2 style={{ fontFamily: 'Orbitron', color: 'var(--accent-purple)' }}>Welcome, {labName}</h2>
+                    <p>Manage patient diagnostics, run AI analysis, and monitor blockchain-verified sample data.</p>
                 </div>
 
                 {/* Stats */}
                 <div className="stats-grid">
                     <div className="stat-card">
-                        <div className="stat-value">{samples.length}</div>
-                        <div className="stat-label">Total Samples</div>
+                        <TestTube size={24} className="stat-icon" style={{ color: 'var(--accent-purple)' }} />
+                        <div>
+                            <div className="stat-value">{samples.length}</div>
+                            <div className="stat-label">Total Samples</div>
+                        </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-value danger">{highRiskCount}</div>
-                        <div className="stat-label">High Risk Cases</div>
+                        <Bell size={24} className="stat-icon" style={{ color: pendingRequestCount > 0 ? 'var(--danger)' : 'var(--accent-cyan)' }} />
+                        <div>
+                            <div className="stat-value" style={{ color: pendingRequestCount > 0 ? 'var(--danger)' : 'var(--accent-cyan)' }}>{pendingRequestCount}</div>
+                            <div className="stat-label">New Requests</div>
+                        </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-value" style={{ color: 'var(--warning)' }}>{pendingCount}</div>
-                        <div className="stat-label">Pending Analysis</div>
+                        <Clock size={24} className="stat-icon" style={{ color: 'var(--warning)' }} />
+                        <div>
+                            <div className="stat-value" style={{ color: 'var(--warning)' }}>{pendingCount}</div>
+                            <div className="stat-label">Pending Analysis</div>
+                        </div>
                     </div>
                     <div className="stat-card">
-                        <div className="stat-value" style={{ color: 'var(--success)' }}>{completedCount}</div>
-                        <div className="stat-label">Completed</div>
+                        <AlertTriangle size={24} className="stat-icon" style={{ color: 'var(--danger)' }} />
+                        <div>
+                            <div className="stat-value danger">{highRiskCount}</div>
+                            <div className="stat-label">High Risk Cases</div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Action Cards */}
                 <div className="action-grid">
+                    <Link to="/lab/requests" className="action-card" style={{ position: 'relative' }}>
+                        <div className="action-icon-wrapper" style={{ color: 'var(--danger)' }}>
+                            <Bell />
+                        </div>
+                        {pendingRequestCount > 0 && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '15px',
+                                right: '15px',
+                                background: 'var(--danger)',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '28px',
+                                height: '28px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '0.85rem'
+                            }}>
+                                {pendingRequestCount}
+                            </div>
+                        )}
+                        <h3>Test Requests</h3>
+                        <p>View and manage patient test requests. Accept or reject incoming requests.</p>
+                        <span className="btn btn-secondary" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>View Requests</span>
+                    </Link>
                     <Link to="/lab/scan" className="action-card">
-                        <div className="action-icon">🔬</div>
+                        <div className="action-icon-wrapper" style={{ color: 'var(--accent-cyan)' }}>
+                            <QrCode />
+                        </div>
                         <h3>Scan New Sample</h3>
-                        <p>Scan QR code to register new sample and generate blockchain Hash #1</p>
-                        <span className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #6432ff, #00ffcc)' }}>Start Scanning</span>
+                        <p>Register new samples and generate their initial blockchain record (Hash #1).</p>
+                        <span className="btn btn-secondary" style={{ borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}>Start Scanning</span>
+                    </Link>
+                    <Link to="/lab/transport" className="action-card">
+                        <div className="action-icon-wrapper" style={{ color: 'var(--accent-purple)' }}>
+                            <Truck />
+                        </div>
+                        <h3>Record Transport</h3>
+                        <p>Logistics pickup details to verify custody transfer with Hash #2.</p>
+                        <span className="btn btn-secondary" style={{ borderColor: 'var(--accent-purple)', color: 'var(--accent-purple)' }}>Record Pickup</span>
                     </Link>
                     <Link to="/lab/analyze" className="action-card">
-                        <div className="action-icon">🤖</div>
+                        <div className="action-icon-wrapper" style={{ color: 'var(--accent-pink)' }}>
+                            <Cpu />
+                        </div>
                         <h3>AI Analysis</h3>
-                        <p>Process sequenced samples with AI and generate risk reports</p>
-                        <span className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #6432ff, #ff00ff)' }}>Run Analysis</span>
-                    </Link>
-                    <Link to="/lab/history" className="action-card">
-                        <div className="action-icon">📊</div>
-                        <h3>View History</h3>
-                        <p>Browse all processed samples and their blockchain trails</p>
-                        <span className="btn btn-secondary">View All</span>
+                        <p>Process sequenced data with the ML model to generate risk reports.</p>
+                        <span className="btn btn-secondary" style={{ borderColor: 'var(--accent-pink)', color: 'var(--accent-pink)' }}>Run Analysis</span>
                     </Link>
                 </div>
 
@@ -71,58 +133,53 @@ const LabDashboard: React.FC = () => {
                         <h3 style={{ fontFamily: 'Orbitron', color: 'var(--accent-purple)', marginBottom: '20px' }}>
                             <Clock size={20} style={{ marginRight: '10px' }} /> Recent Activity
                         </h3>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Sample ID</th>
-                                    <th>Patient ID</th>
-                                    <th>Status</th>
-                                    <th>Risk</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {samples.slice(-5).reverse().map((sample) => (
-                                    <tr key={sample.sampleId}>
-                                        <td style={{ fontFamily: 'Space Mono' }}>{sample.sampleId}</td>
-                                        <td>{sample.patientId}</td>
-                                        <td>
-                                            <span className={`badge ${sample.status === 'completed' ? 'badge-success' : sample.status === 'sequenced' ? 'badge-info' : 'badge-warning'}`}>
-                                                {sample.status}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {sample.riskScore !== undefined ? (
-                                                <span className={`badge ${sample.riskScore >= 70 ? 'badge-danger' : sample.riskScore >= 30 ? 'badge-warning' : 'badge-success'}`}>
-                                                    {sample.riskScore >= 70 ? 'High' : sample.riskScore >= 30 ? 'Medium' : 'Low'}
-                                                </span>
-                                            ) : '-'}
-                                        </td>
-                                        <td>
-                                            {sample.status === 'sequenced' ? (
-                                                <Link to="/lab/analyze" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
-                                                    <Brain size={12} /> Analyze
-                                                </Link>
-                                            ) : sample.status !== 'completed' ? (
-                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>In Progress</span>
-                                            ) : (
-                                                <span className="badge badge-success">Complete</span>
-                                            )}
-                                        </td>
+                        <div className="table-responsive">
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sample ID</th>
+                                        <th>Patient ID</th>
+                                        <th>Status</th>
+                                        <th>Risk</th>
+                                        <th>Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* Pending Alerts */}
-                {pendingCount > 0 && (
-                    <div style={{ marginTop: '20px', padding: '15px 20px', background: 'rgba(255,200,0,0.1)', border: '1px solid var(--warning)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <AlertTriangle size={24} style={{ color: 'var(--warning)' }} />
-                        <div>
-                            <strong style={{ color: 'var(--warning)' }}>{pendingCount} samples pending analysis</strong>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>Go to AI Analysis to process sequenced samples</p>
+                                </thead>
+                                <tbody>
+                                    {samples.slice(-5).reverse().map((sample) => (
+                                        <tr key={sample.sampleId}>
+                                            <td data-label="Sample ID" style={{ fontFamily: 'Space Mono' }}>{sample.sampleId}</td>
+                                            <td data-label="Patient ID">{sample.patientId}</td>
+                                            <td data-label="Status">
+                                                <span className={`badge ${sample.status === 'completed' ? 'badge-success' : sample.status === 'sequenced' ? 'badge-info' : 'badge-warning'}`}>
+                                                    {sample.status}
+                                                </span>
+                                            </td>
+                                            <td data-label="Risk">
+                                                {sample.riskScore !== undefined ? (
+                                                    <span className={`badge ${sample.riskScore >= 70 ? 'badge-danger' : sample.riskScore >= 30 ? 'badge-warning' : 'badge-success'}`}>
+                                                        {sample.riskScore >= 70 ? 'High' : sample.riskScore >= 30 ? 'Medium' : 'Low'}
+                                                    </span>
+                                                ) : <span className="badge">N/A</span>}
+                                            </td>
+                                            <td data-label="Action">
+                                                {sample.status === 'collected' ? (
+                                                    <Link to="/lab/transport" className="btn btn-primary lab" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
+                                                        <Truck size={12} /> Transport
+                                                    </Link>
+                                                ) : sample.status === 'sequenced' ? (
+                                                    <Link to="/lab/analyze" className="btn btn-primary lab" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
+                                                        <Brain size={12} /> Analyze
+                                                    </Link>
+                                                ) : sample.status !== 'completed' ? (
+                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>In Progress</span>
+                                                ) : (
+                                                    <span className="badge badge-success">Complete</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}

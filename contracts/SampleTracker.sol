@@ -3,115 +3,83 @@ pragma solidity ^0.8.19;
 
 /**
  * @title SampleTracker
- * @dev Tracks medical sample processing steps on Polygon Amoy blockchain
- * @notice Each step records an immutable hash for verification
+ * @dev A smart contract for tracking the lifecycle of medical samples
+ * across four key stages: Collection, Transport, Sequencing, and Analysis.
+ * Each step is recorded with a cryptographic hash on the blockchain,
+ * creating an immutable and verifiable audit trail.
  */
 contract SampleTracker {
-    
-    struct SampleRecord {
-        bytes32 collectionHash;    // Step 1: Collection hash
-        bytes32 transportHash;     // Step 2: Transport hash
-        bytes32 sequencingHash;    // Step 3: Sequencing hash
-        bytes32 analysisHash;      // Step 4: AI Analysis hash
-        uint256 createdAt;
-        uint256 lastUpdated;
-        address createdBy;
-        uint8 currentStep;
+
+    // Represents a single medical sample's journey on the blockchain
+    struct Sample {
+        bytes32 hash1; // Hash for Collection step
+        bytes32 hash2; // Hash for Transport step
+        bytes32 hash3; // Hash for Sequencing step
+        bytes32 hash4; // Hash for AI Analysis step
+        uint256 currentStep; // The latest completed step (1-4)
     }
-    
-    // Mapping from sampleId to SampleRecord
-    mapping(string => SampleRecord) public samples;
-    
-    // Events for frontend tracking
-    event StepRecorded(string indexed sampleId, uint8 step, bytes32 hash, address recorder);
-    event SampleCreated(string indexed sampleId, address creator);
-    
+
+    // Mapping from a unique sample ID to its tracking data
+    mapping(string => Sample) private samples;
+
     /**
-     * @dev Record a step in the sample tracking process
-     * @param sampleId Unique identifier for the sample (e.g., "HELIX-ABC123")
-     * @param step Step number (1-4)
-     * @param hash Hash of the step data
+     * @dev Emitted when a new step is successfully recorded for a sample.
+     * @param sampleId The unique identifier for the sample.
+     * @param step The step number being recorded (1-4).
+     * @param hash The cryptographic hash associated with this step.
+     */
+    event StepRecorded(string indexed sampleId, uint8 step, bytes32 hash);
+
+    /**
+     * @dev Records a hash for a specific step in a sample's lifecycle.
+     * It enforces sequential processing, ensuring a step cannot be recorded
+     * until the previous one is complete.
+     *
+     * @param sampleId The unique identifier for the sample.
+     * @param step The step number being recorded (1-4).
+     * @param hash The cryptographic hash for the data at this step.
      */
     function recordStep(string memory sampleId, uint8 step, bytes32 hash) external {
-        require(step >= 1 && step <= 4, "Invalid step number");
-        require(hash != bytes32(0), "Hash cannot be empty");
-        
-        SampleRecord storage record = samples[sampleId];
-        
-        // If new sample, initialize it
-        if (record.createdAt == 0) {
-            record.createdAt = block.timestamp;
-            record.createdBy = msg.sender;
-            emit SampleCreated(sampleId, msg.sender);
-        }
-        
-        // Record hash based on step
+        require(step >= 1 && step <= 4, "SampleTracker: Invalid step number");
+
+        Sample storage sample = samples[sampleId];
+
         if (step == 1) {
-            record.collectionHash = hash;
+            // Can be recorded anytime for a new sample
+            sample.hash1 = hash;
         } else if (step == 2) {
-            record.transportHash = hash;
+            require(sample.currentStep == 1, "SampleTracker: Previous step not completed");
+            sample.hash2 = hash;
         } else if (step == 3) {
-            record.sequencingHash = hash;
+            require(sample.currentStep == 2, "SampleTracker: Previous step not completed");
+            sample.hash3 = hash;
         } else if (step == 4) {
-            record.analysisHash = hash;
+            require(sample.currentStep == 3, "SampleTracker: Previous step not completed");
+            sample.hash4 = hash;
         }
         
-        record.currentStep = step;
-        record.lastUpdated = block.timestamp;
-        
-        emit StepRecorded(sampleId, step, hash, msg.sender);
+        sample.currentStep = step;
+
+        emit StepRecorded(sampleId, step, hash);
     }
-    
+
     /**
-     * @dev Get sample record by ID
-     * @param sampleId Unique identifier for the sample
-     * @return collectionHash The collection step hash
-     * @return transportHash The transport step hash
-     * @return sequencingHash The sequencing step hash
-     * @return analysisHash The analysis step hash
-     * @return createdAt The sample creation timestamp
+     * @dev Retrieves all the stored hashes and the current step for a given sample.
+     * This allows external services to verify the complete tracking history.
+     *
+     * @param sampleId The unique identifier for the sample.
+     * @return hash1 The hash for the Collection step.
+     * @return hash2 The hash for the Transport step.
+     * @return hash3 The hash for the Sequencing step.
+     * @return hash4 The hash for the AI Analysis step.
+     * @return currentStep The latest completed step number for the sample.
      */
-    function getSample(string memory sampleId) external view returns (
-        bytes32 collectionHash,
-        bytes32 transportHash,
-        bytes32 sequencingHash,
-        bytes32 analysisHash,
-        uint256 createdAt
-    ) {
-        SampleRecord storage record = samples[sampleId];
-        return (
-            record.collectionHash,
-            record.transportHash,
-            record.sequencingHash,
-            record.analysisHash,
-            record.createdAt
-        );
-    }
-    
-    /**
-     * @dev Verify a specific step hash matches
-     * @param sampleId Unique identifier for the sample
-     * @param step Step number (1-4)
-     * @param hash Hash to verify
-     * @return bool True if hash matches
-     */
-    function verifyStep(string memory sampleId, uint8 step, bytes32 hash) external view returns (bool) {
-        SampleRecord storage record = samples[sampleId];
-        
-        if (step == 1) return record.collectionHash == hash;
-        if (step == 2) return record.transportHash == hash;
-        if (step == 3) return record.sequencingHash == hash;
-        if (step == 4) return record.analysisHash == hash;
-        
-        return false;
-    }
-    
-    /**
-     * @dev Get current step of a sample
-     * @param sampleId Unique identifier for the sample
-     * @return Current step number (0 if sample doesn't exist)
-     */
-    function getCurrentStep(string memory sampleId) external view returns (uint8) {
-        return samples[sampleId].currentStep;
+    function getSample(string memory sampleId) 
+        external 
+        view 
+        returns (bytes32 hash1, bytes32 hash2, bytes32 hash3, bytes32 hash4, uint256 currentStep) 
+    {
+        Sample storage sample = samples[sampleId];
+        return (sample.hash1, sample.hash2, sample.hash3, sample.hash4, sample.currentStep);
     }
 }
