@@ -14,23 +14,26 @@ const generateReportHTML = (data) => {
         <meta charset="UTF-8">
         <title>HelixAI Medical Report</title>
         <style>
+            @page { size: A4; margin: 20mm; }
             * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; }
             body { 
-                font-family: 'Arial', sans-serif; 
-                line-height: 1.6; 
-                color: #333; 
+                font-family: 'Inter', 'Arial', sans-serif; 
+                line-height: 1.5; 
+                color: #222; 
                 background: #fff;
+                -webkit-print-color-adjust: exact; /* ensure background colors print */
             }
             .header {
-                background: linear-gradient(135deg, #6432ff, #ff00ff);
+                background: #5b3cff; /* solid, printer-friendly */
                 color: white;
-                padding: 30px;
+                padding: 20px 15px;
                 text-align: center;
-                margin-bottom: 30px;
+                margin-bottom: 18px;
             }
-            .header h1 { font-size: 28px; margin-bottom: 10px; }
-            .header p { font-size: 14px; opacity: 0.9; }
-            .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+            .header h1 { font-size: 24px; margin-bottom: 6px; }
+            .header p { font-size: 12px; opacity: 0.95; }
+            .container { max-width: 750px; margin: 0 auto; padding: 0 12px; }
             .report-info {
                 background: #f8f9fa;
                 padding: 20px;
@@ -40,10 +43,11 @@ const generateReportHTML = (data) => {
             }
             .risk-section {
                 text-align: center;
-                margin: 40px 0;
-                padding: 30px;
-                background: #f8f9fa;
-                border-radius: 15px;
+                margin: 22px 0;
+                padding: 18px;
+                background: #fafafa;
+                border-radius: 10px;
+                break-inside: avoid;
             }
             .risk-circle {
                 width: 120px;
@@ -51,12 +55,10 @@ const generateReportHTML = (data) => {
                 border-radius: 50%;
                 background: ${riskColor};
                 color: white;
-                display: flex;
-                flex-direction: column;
+                display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 20px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                margin: 0 auto 12px;
             }
             .risk-score { font-size: 32px; font-weight: bold; }
             .risk-label { font-size: 12px; margin-top: 5px; }
@@ -66,6 +68,7 @@ const generateReportHTML = (data) => {
                 border-radius: 10px;
                 background: #fff;
                 border: 1px solid #e0e0e0;
+                break-inside: avoid;
             }
             .section h3 {
                 color: #6432ff;
@@ -101,11 +104,12 @@ const generateReportHTML = (data) => {
                 font-weight: bold;
             }
             .blockchain-section {
-                background: linear-gradient(135deg, rgba(0,255,200,0.1), rgba(0,255,200,0.05));
-                border: 2px solid #00ffc8;
-                border-radius: 10px;
-                padding: 20px;
-                margin: 30px 0;
+                background: #f7fffb;
+                border: 1px solid #00c9a4;
+                border-radius: 8px;
+                padding: 14px;
+                margin: 20px 0;
+                break-inside: avoid;
             }
             .blockchain-section h3 { color: #00ffc8; }
             .tx-hash {
@@ -155,6 +159,8 @@ const generateReportHTML = (data) => {
                 width: ${data.confidence ? (data.confidence * 100) : 0}%;
                 transition: width 0.3s ease;
             }
+            img { max-width: 100%; height: auto; }
+            .page-break { page-break-after: always; }
         </style>
     </head>
     <body>
@@ -291,19 +297,21 @@ router.post('/generate-report', async (req, res) => {
         
         const options = {
             format: 'A4',
-            border: {
-                top: '0.5in',
-                right: '0.5in',
-                bottom: '0.5in',
-                left: '0.5in'
+            printBackground: true,
+            preferCSSPageSize: true,
+            margin: {
+                top: '20mm',
+                right: '15mm',
+                bottom: '20mm',
+                left: '15mm'
             },
             paginationOffset: 1,
             header: {
-                height: '20mm',
+                height: '15mm',
                 contents: '<div style="text-align: center; color: #666; font-size: 10px;">HelixAI Medical Report - Confidential</div>'
             },
             footer: {
-                height: '20mm',
+                height: '15mm',
                 contents: {
                     default: '<div style="text-align: center; color: #666; font-size: 10px;">Page {{page}} of {{pages}} • Generated {{date}}</div>'
                 }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode, MapPin, User, CheckCircle, Hash, Camera } from 'lucide-react';
+import { QrCode, MapPin, User, CheckCircle, Hash, Camera, Wallet } from 'lucide-react';
 import { useBlockchain } from '../../context/BlockchainContext';
+import { useWallet } from '../../context/WalletContext';
 import Navbar from '../../components/Navbar';
 import '../pages.css';
 
@@ -11,7 +12,10 @@ const ScanSample: React.FC = () => {
     const [clinicLocation, setClinicLocation] = useState('');
     const [scanned, setScanned] = useState(false);
     const [result, setResult] = useState<{ sampleId: string; hash: string } | null>(null);
-    const { recordCollection } = useBlockchain();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { recordCollection, isLoading } = useBlockchain();
+    const { isConnected, isAmoyNetwork, connectWallet, switchToAmoy, isConnecting } = useWallet();
+
 
     const handleScan = () => {
         // Simulate QR code scan
@@ -21,14 +25,27 @@ const ScanSample: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Prevent double submission
+        if (isSubmitting || isLoading) {
+            console.log('Submission already in progress, ignoring duplicate click');
+            return;
+        }
+
         if (!patientId || !nurseId || !clinicLocation) return;
 
+        setIsSubmitting(true);
         try {
             const { sample, transaction } = await recordCollection(patientId, nurseId, clinicLocation);
-            setResult({ sampleId: sample.sampleId, hash: transaction.txHash || transaction.hash });
+            // Use blockchain transaction hash as proof (self-transfer to own account)
+            // txHash is the blockchain transaction ID that serves as proof
+            const proofHash = transaction.txHash || transaction.hash;
+            setResult({ sampleId: sample.sampleId, hash: proofHash });
         } catch (error: any) {
             console.error(error);
             alert(error.message || 'Failed to record sample on blockchain');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -92,6 +109,69 @@ const ScanSample: React.FC = () => {
                             </h3>
 
                             <form onSubmit={handleSubmit}>
+                                {/* Wallet Connection Status */}
+                                <div style={{
+                                    marginBottom: '20px',
+                                    padding: '15px',
+                                    background: isConnected && isAmoyNetwork ? 'rgba(0,255,150,0.1)' : 'rgba(255,165,0,0.1)',
+                                    border: `1px solid ${isConnected && isAmoyNetwork ? 'rgba(0,255,150,0.3)' : 'rgba(255,165,0,0.3)'}`,
+                                    borderRadius: '10px'
+                                }}>
+                                    {!isConnected ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <div style={{ color: '#FFA500', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                    <Wallet size={16} style={{ marginRight: '8px' }} />
+                                                    Wallet Not Connected
+                                                </div>
+                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                                    Connect MetaMask to record on blockchain
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={connectWallet}
+                                                className="btn btn-primary"
+                                                style={{ fontSize: '0.85rem', padding: '8px 16px' }}
+                                                disabled={isConnecting}
+                                            >
+                                                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                                            </button>
+                                        </div>
+                                    ) : !isAmoyNetwork ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <div style={{ color: '#FFA500', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                    Wrong Network
+                                                </div>
+                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                                    Switch to Polygon Amoy Testnet
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={switchToAmoy}
+                                                className="btn btn-primary"
+                                                style={{ fontSize: '0.85rem', padding: '8px 16px' }}
+                                            >
+                                                Switch Network
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <CheckCircle size={20} style={{ color: '#00ff96' }} />
+                                            <div>
+                                                <div style={{ color: '#00ff96', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                    Ready for Blockchain
+                                                </div>
+                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                                    Connected to Polygon Amoy
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="form-group">
                                     <label className="form-label">Patient ID</label>
                                     <input type="text" className="form-input" value={patientId} onChange={(e) => setPatientId(e.target.value)}
@@ -108,8 +188,16 @@ const ScanSample: React.FC = () => {
                                         placeholder="GPS coordinates or clinic name" required />
                                 </div>
 
-                                <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={!patientId}>
-                                    <Hash size={18} style={{ marginRight: '8px' }} /> Generate Hash #1
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    style={{ width: '100%' }}
+                                    disabled={!patientId || isSubmitting || isLoading || !isConnected || !isAmoyNetwork}
+                                >
+                                    <Hash size={18} style={{ marginRight: '8px' }} />
+                                    {!isConnected ? 'Connect Wallet First' :
+                                        !isAmoyNetwork ? 'Switch to Amoy Network' :
+                                            isSubmitting || isLoading ? 'Processing...' : 'Generate Hash #1'}
                                 </button>
                             </form>
                         </div>

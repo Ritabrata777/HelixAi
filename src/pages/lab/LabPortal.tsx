@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dna, FlaskConical, ArrowRight, Shield, Wallet, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Dna, FlaskConical, ArrowRight, Shield, Wallet, CheckCircle, AlertTriangle, LogOut } from 'lucide-react';
 import { useWallet } from '../../context/WalletContext';
-import '../pages.css';
 
 interface FormData {
     labId: string;
@@ -13,7 +12,7 @@ interface FormData {
 const LabPortal: React.FC = () => {
     const [formData, setFormData] = useState<FormData>({ labId: '', password: '', labName: '' });
     const navigate = useNavigate();
-    const { account, isConnected, isConnecting, connectWallet, switchToAmoy, isAmoyNetwork, error } = useWallet();
+    const { account, isConnected, isConnecting, connectWallet, disconnectWallet, switchToAmoy, isAmoyNetwork, error } = useWallet();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,11 +44,6 @@ const LabPortal: React.FC = () => {
                     <h2>Lab Portal</h2>
                     <p className="subtitle">Process samples and run AI-powered analysis</p>
 
-                    <div className="auth-badge">
-                        <Shield size={14} />
-                        <span>Authorized Personnel Only</span>
-                    </div>
-
                     {/* Wallet Connection Section */}
                     <div className="wallet-section">
                         {!isConnected ? (
@@ -63,9 +57,22 @@ const LabPortal: React.FC = () => {
                             </button>
                         ) : (
                             <div className="wallet-connected">
-                                <div className="wallet-status">
-                                    <CheckCircle size={16} />
-                                    <span>Wallet Connected</span>
+                                <div className="wallet-status" style={{ justifyContent: 'space-between', width: '100%' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <CheckCircle size={16} />
+                                        <span>Wallet Connected</span>
+                                    </div>
+                                    <button onClick={disconnectWallet} title="Disconnect Wallet" style={{ 
+                                        background: 'none', 
+                                        border: 'none', 
+                                        color: 'var(--text-muted)', 
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        borderRadius: '4px',
+                                        display: 'flex'
+                                    }}>
+                                        <LogOut size={16} />
+                                    </button>
                                 </div>
                                 <div className="wallet-address">
                                     {account ? formatAddress(account) : ''}

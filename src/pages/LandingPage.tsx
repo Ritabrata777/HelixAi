@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Dna, User, FlaskConical, Shield, GitBranch, Cpu, Lock } from 'lucide-react';
-import './pages.css';
+import { Dna, User, FlaskConical, Shield, GitBranch, Cpu, Lock, Package, Truck, Brain } from 'lucide-react';
 
 
 const LandingPage: React.FC = () => {
@@ -63,7 +62,7 @@ const LandingPage: React.FC = () => {
                 <div className="steps-container">
                     <div className="step-card">
                         <div className="step-number">01</div>
-                        <div className="step-icon">🔬</div>
+                        <div className="step-icon"><Package size={32} /></div>
                         <h3>Collection</h3>
                         <p>Nurse scans test tube QR code. Blockchain generates Hash #1 with timestamp, Patient ID, and GPS location.</p>
                     </div>
@@ -72,7 +71,7 @@ const LandingPage: React.FC = () => {
 
                     <div className="step-card">
                         <div className="step-number">02</div>
-                        <div className="step-icon">🚚</div>
+                        <div className="step-icon"><Truck size={32} /></div>
                         <h3>Transport</h3>
                         <p>Logistics picks up sample. Hash #2 verifies custody transfer and tracks delivery path.</p>
                     </div>
@@ -81,7 +80,7 @@ const LandingPage: React.FC = () => {
 
                     <div className="step-card">
                         <div className="step-number">03</div>
-                        <div className="step-icon">🧬</div>
+                        <div className="step-icon"><FlaskConical size={32} /></div>
                         <h3>Sequencing</h3>
                         <p>Lab runs Low-Pass WGS. Hash #3 records raw data checksum proving data integrity.</p>
                     </div>
@@ -90,7 +89,7 @@ const LandingPage: React.FC = () => {
 
                     <div className="step-card">
                         <div className="step-number">04</div>
-                        <div className="step-icon">🤖</div>
+                        <div className="step-icon"><Brain size={32} /></div>
                         <h3>AI Analysis</h3>
                         <p>AI processes data. Smart Contract triggers Risk Report generation automatically.</p>
                     </div>

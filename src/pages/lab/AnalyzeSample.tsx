@@ -82,6 +82,13 @@ const AnalyzeSample: React.FC = () => {
 
     const handleAIAnalysis = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Prevent double submission
+        if (processing) {
+            console.log('Analysis already in progress, ignoring duplicate submission');
+            return;
+        }
+        
         if (!selectedSample) {
             showError('Please select a sample first!');
             return;
