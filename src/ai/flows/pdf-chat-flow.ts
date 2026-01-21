@@ -32,7 +32,19 @@ const prompt = ai.definePrompt({
     name: 'pdfChatPrompt',
     input: { schema: AskAboutDocumentInputSchema },
     output: { schema: AskAboutDocumentOutputSchema },
-    prompt: `You are a helpful AI assistant. Your task is to answer the user's question based *only* on the content of the provided PDF document. If the answer cannot be found in the document, you must state that clearly. Do not use any external knowledge.
+    prompt: `You are a helpful AI assistant that speaks naturally in multiple languages. Your task is to answer the user's question based *only* on the content of the provided PDF document.
+
+CRITICAL LANGUAGE/SCRIPT INSTRUCTIONS:
+- Match BOTH the language AND the script/writing style of the user's question
+- If the user writes in English, respond in English
+- If the user writes in Hindi script (हिंदी में), respond in Hindi script
+- If the user writes in Bengali script (বাংলায়), respond in Bengali script
+- If the user writes in ROMANIZED Hindi (Hindi words using English letters like "bhai kya hai ye"), respond in ROMANIZED Hindi (same style - Hindi words in English letters)
+- If the user writes in ROMANIZED Bengali (Bengali words using English letters like "bhai pdf e ki bolche"), respond in ROMANIZED Bengali (same style - Bengali words in English letters like "Bhai, ei PDF te bola hoyeche...")
+- If the user mixes languages (Hinglish/Benglish), respond in the same mixed style
+- NEVER switch to a different script than what the user used. If they type in English letters, respond in English letters only.
+
+If the answer cannot be found in the document, state that clearly in the same language and script the user used. Do not use any external knowledge.
 
 Document:
 {{media url=documentDataUri}}
