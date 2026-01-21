@@ -4,8 +4,8 @@ import Navbar from '../../components/Navbar';
 import { useToast } from '../../context/ToastContext';
 
 interface Message {
-  text: string;
-  sender: 'user' | 'bot';
+    text: string;
+    sender: 'user' | 'bot';
 }
 
 const ChatWithPDF: React.FC = () => {
@@ -22,7 +22,7 @@ const ChatWithPDF: React.FC = () => {
         if (file && file.type === 'application/pdf') {
             setPdfFile(file);
             setMessages([]); // Reset chat
-            
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 setPdfDataUri(e.target?.result as string);
@@ -64,7 +64,7 @@ const ChatWithPDF: React.FC = () => {
             if (!apiResponse.ok) {
                 throw new Error(result.error || 'An unknown API error occurred.');
             }
-            
+
             setMessages([...newMessages, { text: result.answer, sender: 'bot' }]);
         } catch (error: any) {
             const errorMessage = error.message || "I'm having trouble connecting. Please check the server and try again.";
@@ -82,13 +82,13 @@ const ChatWithPDF: React.FC = () => {
             <div className="portal-container" style={{ maxWidth: '800px' }}>
                 <div className="welcome-card">
                     <h2>📄 AI Document Assistant</h2>
-                    <p>Upload a PDF and ask questions about its content. The AI will answer based on the information within the document.</p>
+                    <p>Upload a PDF and ask questions in Hindi, Bengali, or English. The AI will respond in your language! हिंदी, বাংলা, or English - as you prefer!</p>
                 </div>
 
                 <div className="form-card" style={{ display: 'flex', flexDirection: 'column', height: '70vh' }}>
                     {!pdfFile ? (
-                        <div 
-                            className="upload-area" 
+                        <div
+                            className="upload-area"
                             onClick={() => fileInputRef.current?.click()}
                             style={{
                                 flex: 1,
@@ -117,11 +117,11 @@ const ChatWithPDF: React.FC = () => {
                         </div>
                     ) : (
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                            <div 
-                                style={{ 
-                                    padding: '12px', 
-                                    background: 'rgba(0,0,0,0.2)', 
-                                    borderRadius: '8px', 
+                            <div
+                                style={{
+                                    padding: '12px',
+                                    background: 'rgba(0,0,0,0.2)',
+                                    borderRadius: '8px',
                                     marginBottom: '16px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
@@ -129,7 +129,7 @@ const ChatWithPDF: React.FC = () => {
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <FileText size={20} style={{color: 'var(--accent-cyan)'}}/>
+                                    <FileText size={20} style={{ color: 'var(--accent-cyan)' }} />
                                     <span style={{ color: 'var(--text-primary)' }}>{pdfFile.name}</span>
                                 </div>
                                 <button
@@ -137,7 +137,7 @@ const ChatWithPDF: React.FC = () => {
                                         setPdfFile(null);
                                         setPdfDataUri(null);
                                         setMessages([]);
-                                        if(fileInputRef.current) fileInputRef.current.value = "";
+                                        if (fileInputRef.current) fileInputRef.current.value = "";
                                     }}
                                     className="btn btn-secondary"
                                     style={{ padding: '6px 12px', fontSize: '0.8rem' }}
@@ -145,12 +145,12 @@ const ChatWithPDF: React.FC = () => {
                                     Change File
                                 </button>
                             </div>
-                            
+
                             <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px', padding: '10px' }}>
                                 <div className="chat-messages">
                                     {messages.length === 0 && (
                                         <div className="message bot-message" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
-                                            <p>PDF loaded. I'm ready to answer your questions about this document.</p>
+                                            <p>PDF loaded! Ask me anything in Hindi, Bengali, or English. मैं हिंदी में जवाब दूंगा। আমি বাংলায় উত্তর দেব। I'll respond in your language!</p>
                                         </div>
                                     )}
                                     {messages.map((msg, index) => (
@@ -159,20 +159,20 @@ const ChatWithPDF: React.FC = () => {
                                         </div>
                                     ))}
                                     {isLoading && (
-                                         <div className="message bot-message">
-                                            <Loader2 className="animate-spin" size={20} style={{ animation: 'spin 1s linear infinite' }}/>
-                                         </div>
+                                        <div className="message bot-message">
+                                            <Loader2 className="animate-spin" size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                                        </div>
                                     )}
                                 </div>
                             </div>
-                            
+
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 <input
                                     type="text"
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                                    placeholder="Ask a question about the document..."
+                                    placeholder="Ask in Hindi, Bengali, or English... हिंदी/বাংলা/English"
                                     className="form-input"
                                     style={{ flex: 1 }}
                                     disabled={isLoading}
@@ -182,7 +182,7 @@ const ChatWithPDF: React.FC = () => {
                                     className="btn btn-primary"
                                     disabled={isLoading || !userInput.trim()}
                                 >
-                                    {isLoading ? <Loader2 className="animate-spin" size={20} style={{ animation: 'spin 1s linear infinite' }}/> : <Send size={20} />}
+                                    {isLoading ? <Loader2 className="animate-spin" size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={20} />}
                                 </button>
                             </div>
                         </div>
