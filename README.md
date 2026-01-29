@@ -196,7 +196,7 @@ Add Polygon Amoy Testnet to MetaMask:
 | **Network Name** | Polygon Amoy Testnet |
 | **RPC URL** | `https://rpc-amoy.polygon.technology` |
 | **Chain ID** | `80002` |
-| **Currency Symbol** | MATIC |
+| **Currency Symbol** | POL |
 | **Block Explorer** | `https://amoy.polygonscan.com/` |
 
 ### Get Test MATIC
